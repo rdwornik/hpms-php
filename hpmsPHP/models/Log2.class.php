@@ -1,8 +1,7 @@
 <?php
-include_once "Table.class.php";
 require "../../../private/settings.php";
 
-class Log extends Table
+class Log2 
 {
     private $argByPost; //By POST
     private $argByGet; //By GET
@@ -13,10 +12,9 @@ class Log extends Table
     private $strange; //strange
     private $strangeStr; //strange info string
 
-    public function __construct($db)
+    public function __construct()
     {
        global $config;
-       parent::__construct($db);
         $this->srv = $_SERVER;
         $this->argByPost = $_POST;
         $this->argByGet = $_GET;
@@ -30,12 +28,15 @@ class Log extends Table
     public function save()
     {
         $tmp = array();
-        $result = true;
+
+        $tmp['datetime'] = $this->datetime;
+        $tmp['server'] = $this->server;
+        print_r($this->filter);
         if ((!empty($this->srv)))
         {
             foreach ($this->srv as $key => $value)
             {
-                if (!in_array($key,str_split($this->filter)))
+                if (!in_array($key,(array)$this->filter))
                 {
                     if ($this->isStrange($value))
                     {
@@ -45,14 +46,13 @@ class Log extends Table
                 }
 
             }
-            $result = $this->sentData($tmp) && $result;
         }
 
         if (($this->srv['REQUEST_METHOD'] === 'GET') && !empty($this->argByGet)) 
         {
             foreach ($this->argByGet as $key => $value)
             {
-                if (!in_array($key, str_split($this->filter)))
+                if (!in_array($key, (array)$this->filter))
                 {
                     $key = "[GET] " . $key;
                     if ($this->isStrange($value))
@@ -62,14 +62,13 @@ class Log extends Table
                     $tmp[$key] = $value;
                 }
             }
-            $result = $this->sentData($tmp) && $result;
         }
 
         if (($this->srv['REQUEST_METHOD'] === 'POST') && !empty($this->argByPost))
         {
             foreach ($this->argByPost as $key => $value)
             {
-                if (!in_array($key, str_split($this->filter)))
+                if (!in_array($key, (array)$this->filter))
                 {
                     $key = "[POST] " . $key;
                     if ($this->isStrange($value))
@@ -79,7 +78,6 @@ class Log extends Table
                     $tmp[$key] = $value;
                 }
             }
-            $result = $this->sentData($tmp) && $result;
         }
 
         $key = "[POST] [RAW POST]";
@@ -91,39 +89,48 @@ class Log extends Table
                 $value =$this->strangeStr;
             }
             $tmp = array($key => $value);
-            $result = $this->sentData($tmp) && $result;
         }
+        return $tmp;
+    }
+
+    public function post($url, $postVars = array())
+    {
+        //Transform our POST array into a URL-encoded query string.
+        $postStr = http_build_query($postVars);
+        //Create an $options array that can be passed into stream_context_create.
+        $options = array(
+            'http' =>
+                array(
+                    'method'  => 'POST', //We are using the POST HTTP method.
+                    'header'  => 'Content-type: application/x-www-form-urlencoded',
+                    'content' => $postStr //Our URL-encoded query string.
+                )
+        );
+        //Pass our $options array into stream_context_create.
+        //This will return a stream context resource.
+        $streamContext  = stream_context_create($options);
+        //Use PHP's file_get_contents function to carry out the request.
+        //We pass the $streamContext variable in as a third parameter.
+        $result = file_get_contents($url, false, $streamContext);
+        //If $result is FALSE, then the request has failed.
+        if($result === false)
+        {
+            //If the request failed, throw an Exception containing
+            //the error.
+            $error = error_get_last();
+            throw new Exception('POST request failed: ' . $error['message']);
+        }
+        //If everything went OK, return the response.
         return $result;
     }
 
-    public function sentData(&$logArray)
-    {
-        $this->result = false;
-        $tmp = (array) $logArray;
-       //
-        $entrySQL = "insert into logs_log (data) values (?)";
-        $tmp['time'] = $this->datetime;
-        $myJson = json_encode($tmp);
-        $formData = array($myJson);
-        if (!(empty($formData)))
-        {
-            $this->result = $this->makeStatement($entrySQL, $formData);
-        }
-        $logArray = array();
-        return $this->result;
-    }
 
-    private function isStrange($str)
+    public function isStrange($str)
     {
-        $strange = array(
-            "01",
-            "03",
-            "80");
-
         foreach (str_split($str) as $c)
         {
             $h = sprintf("%02x", ord($c));
-            if (in_array($h, str_split($this->strange)))
+            if (in_array($h, (array)$this->strange))
             {
                 return true;
             }
