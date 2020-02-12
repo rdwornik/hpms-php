@@ -11,6 +11,7 @@ class Log
     private $filter; //filter
     private $strange; //strange
     private $strangeStr; //strange info string
+    private $url;
 
     public function __construct()
     {
@@ -23,17 +24,19 @@ class Log
         $this->filter = $config['filter'];
         $this->strange = $config['strange'];
         $this->strangeStr = $config['strangeStr'];
+        $this->url = $config['url'];
 
     }
-    public function save()
+    private function getLog()
     {
         $tmp = array();
-
+        print_r($this->srv['REQUEST_METHOD']);
+        print_r($this->argByGet);
         $tmp['datetime'] = $this->datetime;
         $tmp['server'] = $this->server;
-        print_r($this->filter);
         if ((!empty($this->srv)))
         {
+           echo "loop1"; 
             foreach ($this->srv as $key => $value)
             {
                 if (!in_array($key,(array)$this->filter))
@@ -50,6 +53,8 @@ class Log
 
         if (($this->srv['REQUEST_METHOD'] === 'GET') && !empty($this->argByGet)) 
         {
+            echo "loop2"; 
+
             foreach ($this->argByGet as $key => $value)
             {
                 if (!in_array($key, (array)$this->filter))
@@ -66,6 +71,8 @@ class Log
 
         if (($this->srv['REQUEST_METHOD'] === 'POST') && !empty($this->argByPost))
         {
+            echo "loop3"; 
+
             foreach ($this->argByPost as $key => $value)
             {
                 if (!in_array($key, (array)$this->filter))
@@ -93,10 +100,10 @@ class Log
         return $tmp;
     }
 
-    public function post($url, $postVars = array())
+    public function post()
     {
         //Transform our POST array into a URL-encoded query string.
-        $postStr = http_build_query($postVars);
+        $postStr = http_build_query($this->getLog());
         //Create an $options array that can be passed into stream_context_create.
         $options = array(
             'http' =>
@@ -111,7 +118,7 @@ class Log
         $streamContext  = stream_context_create($options);
         //Use PHP's file_get_contents function to carry out the request.
         //We pass the $streamContext variable in as a third parameter.
-        $result = file_get_contents($url, false, $streamContext);
+        $result = file_get_contents( $this->url, false, $streamContext);
         //If $result is FALSE, then the request has failed.
         if($result === false)
         {
@@ -125,7 +132,7 @@ class Log
     }
 
 
-    public function isStrange($str)
+    private function isStrange($str)
     {
         foreach (str_split($str) as $c)
         {
