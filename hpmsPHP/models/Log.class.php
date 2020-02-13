@@ -12,6 +12,7 @@ class Log
     private $strange; //strange
     private $strangeStr; //strange info string
     private $url;
+    private $headers;
 
     public function __construct()
     {
@@ -25,97 +26,72 @@ class Log
         $this->strange = $config['strange'];
         $this->strangeStr = $config['strangeStr'];
         $this->url = $config['url'];
-
+        $this->headers = (array)$config['headers'];
     }
     private function getLog()
     {
         $tmp = array();
-        print_r($this->srv['REQUEST_METHOD']);
-        print_r($this->argByGet);
         $tmp['datetime'] = $this->datetime;
         $tmp['server'] = $this->server;
         if ((!empty($this->srv)))
         {
-           echo "loop1"; 
-            foreach ($this->srv as $key => $value)
-            {
-                if (!in_array($key,(array)$this->filter))
-                {
-                    if ($this->isStrange($value))
-                    {
-                        $value = $this->strangeStr;
-                    }
-                    $tmp[$key] = $value;
-                }
-
-            }
+            $tmp=array_merge($tmp,$this->srv);
         }
 
-        if (($this->srv['REQUEST_METHOD'] === 'GET') && !empty($this->argByGet)) 
+        if (($this->srv['REQUEST_METHOD'] === 'GET') && !empty($this->argByGet))
         {
-            echo "loop2"; 
-
-            foreach ($this->argByGet as $key => $value)
-            {
-                if (!in_array($key, (array)$this->filter))
-                {
-                    $key = "[GET] " . $key;
-                    if ($this->isStrange($value))
-                    {
-                        $value = $this->strangeStr;
-                    }
-                    $tmp[$key] = $value;
-                }
-            }
+          //  array_walk($this->argByGet,function(&$item,$key, $prefix){$item = "[GET] $prefix $item";});
+            $tmp=array_merge($tmp,$this->argByGet);
         }
 
         if (($this->srv['REQUEST_METHOD'] === 'POST') && !empty($this->argByPost))
         {
-            echo "loop3"; 
-
-            foreach ($this->argByPost as $key => $value)
-            {
-                if (!in_array($key, (array)$this->filter))
-                {
-                    $key = "[POST] " . $key;
-                    if ($this->isStrange($value))
-                    {
-                        $value = $this->strangeStr;
-                    }
-                    $tmp[$key] = $value;
-                }
-            }
+            $tmp=array_merge($tmp,$this->argByPost);
         }
 
-        $key = "[POST] [RAW POST]";
         $value = file_get_contents("php://input");
-        if (strlen($value) > 0) 
+        if (strlen($value) > 0)
         {
+            $key = "[POST] [RAW POST]";
+
             if ($this->isStrange($value))
             {
                 $value =$this->strangeStr;
             }
-            $tmp = array($key => $value);
+            $tmp = array_merge($tmp,array($key => $value));
         }
         return $tmp;
     }
 
     public function post()
     {
+
         //Transform our POST array into a URL-encoded query string.
         $postStr = http_build_query($this->getLog());
+        $this->setContentLength($postStr);
+      
         //Create an $options array that can be passed into stream_context_create.
+        print_r($postStr);
+        $h = array_map(function ($h, $v) {return "$h: $v";}, array_keys($this->headers), $this->headers);
+        echo "HEADERS \n";
+        print_r($h);
+
+        
         $options = array(
             'http' =>
                 array(
                     'method'  => 'POST', //We are using the POST HTTP method.
-                    'header'  => 'Content-type: application/x-www-form-urlencoded',
+                    'header'  =>  $this->headers,
                     'content' => $postStr //Our URL-encoded query string.
-                )
+                    )
         );
+ 
+
         //Pass our $options array into stream_context_create.
         //This will return a stream context resource.
         $streamContext  = stream_context_create($options);
+        echo "stream context is \n";
+        print_r($streamContext);
         //Use PHP's file_get_contents function to carry out the request.
         //We pass the $streamContext variable in as a third parameter.
         $result = file_get_contents( $this->url, false, $streamContext);
@@ -131,7 +107,6 @@ class Log
         return $result;
     }
 
-
     private function isStrange($str)
     {
         foreach (str_split($str) as $c)
@@ -143,6 +118,11 @@ class Log
             }
         }
         return false;
+    }
+
+    private function setContentLength($str)
+    {
+        $this->headers['Content-Length'] = strlen((string)$str);
     }
 
 }
