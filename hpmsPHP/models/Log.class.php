@@ -69,29 +69,19 @@ class Log
         //Transform our POST array into a URL-encoded query string.
         $postStr = http_build_query($this->getLog());
         $this->setContentLength($postStr);
-      
-        //Create an $options array that can be passed into stream_context_create.
-        print_r($postStr);
-        $h = array_map(function ($h, $v) {return "$h: $v";}, array_keys($this->headers), $this->headers);
-        echo "HEADERS \n";
-        print_r($h);
-
         
         $options = array(
             'http' =>
                 array(
                     'method'  => 'POST', //We are using the POST HTTP method.
-                    'header'  =>  $this->headers,
+                    'header'  =>  array_map(function ($h, $v) {return "$h: $v";}, array_keys($this->headers), $this->headers),
                     'content' => $postStr //Our URL-encoded query string.
                     )
         );
- 
-
         //Pass our $options array into stream_context_create.
         //This will return a stream context resource.
         $streamContext  = stream_context_create($options);
-        echo "stream context is \n";
-        print_r($streamContext);
+
         //Use PHP's file_get_contents function to carry out the request.
         //We pass the $streamContext variable in as a third parameter.
         $result = file_get_contents( $this->url, false, $streamContext);
