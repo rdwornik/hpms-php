@@ -94,15 +94,15 @@ class Log
         //     throw new Exception('POST request failed: ' . $error['message']);
         // }
         //If everything went OK, return the response.
-        $h =  array_map(function ($h, $v) {return "$h: $v";}, array_keys($this->headers), $this->headers);                                      
-        $t = json_encode($this->getLog());
+        $header =  array_map(function ($h, $v) {return "$h: $v";}, array_keys($this->headers), $this->headers);
+        $body = json_encode($this->getLog());
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_USERPWD, "user2:user2user2user2");  
         curl_setopt($ch, CURLOPT_URL, $this->url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_HTTPHEADER,$h);
+        curl_setopt($ch, CURLOPT_HTTPHEADER,$header);
         curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $t);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
         $result = curl_exec($ch);
         return $result;
     }
