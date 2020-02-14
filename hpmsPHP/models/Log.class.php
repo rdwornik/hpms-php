@@ -96,24 +96,14 @@ class Log
         //If everything went OK, return the response.
         $h =  array_map(function ($h, $v) {return "$h: $v";}, array_keys($this->headers), $this->headers);                                      
         $t = json_encode($this->getLog());
-        print_r($t);        
-        echo "\n";
-        $body = '{
-            "kind": "blogger#post",
-            "blog": {
-              "id": "8070105920543249955"
-            },
-            "title": "A new post",
-            "data": "With <b>exciting</b> content..."
-          }';
-          $ch = curl_init();
-          curl_setopt($ch, CURLOPT_USERPWD, "user2:user2user2user2");  
-          curl_setopt($ch, CURLOPT_URL, $this->url);
-          curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-          curl_setopt($ch, CURLOPT_HTTPHEADER,$h);
-          curl_setopt($ch, CURLOPT_POST, 1);
-          curl_setopt($ch, CURLOPT_POSTFIELDS, $t);
-          $result = curl_exec($ch);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_USERPWD, "user2:user2user2user2");  
+        curl_setopt($ch, CURLOPT_URL, $this->url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HTTPHEADER,$h);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $t);
+        $result = curl_exec($ch);
         return $result;
     }
 
