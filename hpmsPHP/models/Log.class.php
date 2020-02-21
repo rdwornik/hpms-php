@@ -1,8 +1,7 @@
 <?php
-include_once "Table.class.php";
 require "../../../private/settings.php";
 
-class Log extends Table
+class Log
 {
     private $argByPost; //By POST
     private $argByGet; //By GET
@@ -12,13 +11,13 @@ class Log extends Table
     private $filter; //filter
     private $strange; //strange
     private $strangeStr; //strange info string
-    private $table_name; //table name to which data will be added it
-    private $column_name; //column name to which data inserted
+    private $url;
+    private $headers;
+    private $auth;
 
-    public function __construct($db)
+    public function __construct()
     {
        global $config;
-       parent::__construct($db);
         $this->srv = $_SERVER;
         $this->argByPost = $_POST;
         $this->argByGet = $_GET;
@@ -27,111 +26,78 @@ class Log extends Table
         $this->filter = $config['filter'];
         $this->strange = $config['strange'];
         $this->strangeStr = $config['strangeStr'];
-        $this->table_name = $config['DBtable'];
-        $this->column_name = $config['DBcolumn'];
+        $this->url = $config['url'];
+        $this->headers = (array)$config['headers'];
+        $this->auth = $config['user'].":".$config['password'];
     }
-    public function save()
+    private function getLog()
     {
         $tmp = array();
-        $result = true;
+        $tmp['datetime'] = $this->datetime;
+        $tmp['server'] = $this->server;
         if ((!empty($this->srv)))
         {
-            foreach ($this->srv as $key => $value)
-            {
-                if (!in_array($key, $filter))
-                {
-                    if ($this->isStrange($value))
-                    {
-                        $value = $strangeStr;
-                    }
-                    $tmp[$key] = $value;
-                }
-
-            }
-            $result = $this->sentData($tmp) && $result;
+            $tmp=array_merge($tmp,$this->srv);
         }
 
-        if (($this->srv['REQUEST_METHOD'] === 'GET') && !empty($this->argByGet)) 
+        if (($this->srv['REQUEST_METHOD'] === 'GET') && !empty($this->argByGet))
         {
-            foreach ($this->argByGet as $key => $value)
-            {
-                if (!in_array($key, $this->filter))
-                {
-                    $key = "[GET] " . $key;
-                    if ($this->isStrange($value))
-                    {
-                        $value = $strangeStr;
-                    }
-                    $tmp[$key] = $value;
-                }
-            }
-            $result = $this->sentData($tmp) && $result;
+          //  array_walk($this->argByGet,function(&$item,$key, $prefix){$item = "[GET] $prefix $item";});
+            $tmp=array_merge($tmp,$this->argByGet);
         }
 
         if (($this->srv['REQUEST_METHOD'] === 'POST') && !empty($this->argByPost))
         {
-            foreach ($this->argByPost as $key => $value)
-            {
-                if (!in_array($key, $this->filter))
-                {
-                    $key = "[POST] " . $key;
-                    if ($this->isStrange($value))
-                    {
-                        $value = $strangeStr;
-                    }
-                    $tmp[$key] = $value;
-                }
-            }
-            $result = $this->sentData($tmp) && $result;
+            $tmp=array_merge($tmp,$this->argByPost);
         }
 
-        $key = "[POST] [RAW POST]";
         $value = file_get_contents("php://input");
-        if (strlen($value) > 0) 
+        if (strlen($value) > 0)
         {
+            $key = "[POST] [RAW POST]";
+
             if ($this->isStrange($value))
             {
-                $value = $this->$strangeStr;
+                $value =$this->strangeStr;
             }
-            $tmp = array($key => $value);
-            $result = $this->sentData($tmp) && $result;
+            $tmp = array_merge($tmp,array($key => $value));
         }
-        return $result;
+        return array("data" => $tmp);
     }
 
-    public function sentData(&$logArray)
+    public function post()
     {
-        $this->result = false;
-        $tmp = (array) $logArray;
-       //
-        $entrySQL = "insert into logs_log (data) values (?)";
-        $tmp['time'] = $this->datetime;
-        $myJson = json_encode($tmp);
-        $formData = array($myJson);
-        if (!(empty($formData)))
-        {
-            $this->result = $this->makeStatement($entrySQL, $formData);
-        }
-        $logArray = array();
-        return $this->result;
+        //If everything went OK, return the response.
+        $header =  array_map(function ($h, $v) {return "$h: $v";}, array_keys($this->headers), $this->headers);
+        $body = json_encode($this->getLog());
+        $this->setContentLength($body);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_USERPWD, $this->auth);  
+        curl_setopt($ch, CURLOPT_URL, $this->url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HTTPHEADER,$header);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+        $result = curl_exec($ch);
+        return $result;
     }
 
     private function isStrange($str)
     {
-        $strange = array(
-            "01",
-            "03",
-            "80");
-
         foreach (str_split($str) as $c)
         {
             $h = sprintf("%02x", ord($c));
-            if (in_array($h, $this->strange))
+            if (in_array($h, (array)$this->strange))
             {
                 return true;
             }
         }
         return false;
+    }
+
+    private function setContentLength($str)
+    {
+        $this->headers['Content-Length'] = strlen((string)$str);
     }
 
 }
