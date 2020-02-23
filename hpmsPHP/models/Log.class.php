@@ -17,10 +17,10 @@ class Log
 
     public function __construct()
     {
-       global $config;
-        $this->srv = $_SERVER;
-        $this->argByPost = $_POST;
-        $this->argByGet = $_GET;
+        global $config;
+        $this->srv = array_filter($_SERVER, 'strlen');
+        $this->argByPost =  array_filter($_POST, 'strlen');
+        $this->argByGet = array_filter($_GET, 'strlen');
         $this->datetime = date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']);
         $this->server = $config['serverName'];
         $this->filter = $config['filter'];
