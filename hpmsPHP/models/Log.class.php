@@ -23,7 +23,7 @@ class Log
         $this->argByGet = array_filter($_GET, 'strlen');
         $this->datetime = date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']);
         $this->server = $config['serverName'];
-        $this->filter = $config['filter'];
+        $this->filter = (array)$config['filter'];
         $this->strange = $config['strange'];
         $this->strangeStr = $config['strangeStr'];
         $this->url = $config['url'];
@@ -35,27 +35,42 @@ class Log
         $tmp = array();
         $tmp['datetime'] = $this->datetime;
         $tmp['server'] = $this->server;
+        $to_filtr = $this->filter;
+
+        $result = array();
+
+        $func = function (&$item1, &$key, $prefix) use(&$result, $to_filtr)
+        {
+            if(!in_array($key, $to_filtr))
+                $result[$prefix.$key] = $item1;
+        };
+
+
         if ((!empty($this->srv)))
         {
-            $tmp=array_merge($tmp,$this->srv);
+            $result = array();
+            array_walk($this->srv,$func,'');
+            $tmp=array_merge($tmp,$result);
         }
 
         if (($this->srv['REQUEST_METHOD'] === 'GET') && !empty($this->argByGet))
         {
-          //  array_walk($this->argByGet,function(&$item,$key, $prefix){$item = "[GET] $prefix $item";});
-            $tmp=array_merge($tmp,$this->argByGet);
+            $result = array();
+            array_walk($this->argByGet,$func,'[GET] ');
+            $tmp=array_merge($tmp,$result);
         }
 
         if (($this->srv['REQUEST_METHOD'] === 'POST') && !empty($this->argByPost))
         {
-            $tmp=array_merge($tmp,$this->argByPost);
+            $result = array();
+            array_walk($this->argByPost,$func,'[GET] ');
+            $tmp=array_merge($tmp,$result);
         }
 
         $value = file_get_contents("php://input");
         if (strlen($value) > 0)
         {
             $key = "[POST] [RAW POST]";
-
             if ($this->isStrange($value))
             {
                 $value =$this->strangeStr;
@@ -80,19 +95,6 @@ class Log
         curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
         $result = curl_exec($ch);
         return $result;
-    }
-
-    private function isStrange($str)
-    {
-        foreach (str_split($str) as $c)
-        {
-            $h = sprintf("%02x", ord($c));
-            if (in_array($h, (array)$this->strange))
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     private function setContentLength($str)
