@@ -35,7 +35,7 @@ class Log
     {
         $add = function($h, $v)
         {
-            return array('key' => $h, 'value' => $v);
+            return array('name' => $h, 'value' => $v);
         };
 
         $tmp = array();
