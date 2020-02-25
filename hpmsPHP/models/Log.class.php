@@ -102,4 +102,17 @@ class Log
         $this->headers['Content-Length'] = strlen((string)$str);
     }
 
+    private function isStrange($str)
+    {
+        foreach (str_split($str) as $c)
+        {
+            $h = sprintf("%02x", ord($c));
+            if (in_array($h, (array)$this->strange))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }
