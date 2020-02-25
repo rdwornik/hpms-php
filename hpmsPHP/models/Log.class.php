@@ -29,7 +29,6 @@ class Log
         $this->url = $config['url'];
         $this->headers = (array)$config['headers'];
         $this->auth = $config['user'].":".$config['password'];
-        $this->result = array();
     }
     private function getLog()
     {
@@ -41,22 +40,35 @@ class Log
         $tmp = array();
         array_push($tmp, $add('datetime',$this->datetime));
         array_push($tmp, $add('server',$this->server));
+        $to_filtr = $this->filter;
+        $result = array();
+
+        $func = function (&$item1, &$key, $prefix) use(&$result, $to_filtr,$add)
+        {
+            if(!in_array($key, $to_filtr))
+                $result[$prefix.$key] = $item1;
+        };
 
 
         if ((!empty($this->srv)))
         {
-            $tmp = array_merge($tmp,array_map($add, array_keys($this->srv), $this->srv));
+            $result = array();
+            array_walk($this->srv,$func,'');
+            $tmp = array_merge($tmp,array_map($add, array_keys($result), $result));
         }
 
         if (($this->srv['REQUEST_METHOD'] === 'GET') && !empty($this->argByGet))
         {
-          //  array_walk($this->argByGet,function(&$item,$key, $prefix){$item = "[GET] $prefix $item";});
-            $tmp = array_merge($tmp,array_map($add, array_keys($this->argByGet), $this->argByGet));
+            $result = array();
+            array_walk($this->argByGet,$func,'[GET] ');
+            $tmp = array_merge($tmp,array_map($add, array_keys($result), $result));
         }
 
         if (($this->srv['REQUEST_METHOD'] === 'POST') && !empty($this->argByPost))
         {
-            $tmp = array_merge($tmp,array_map($add, array_keys($this->argByPost), $this->argByPost));
+            $result = array();
+            array_walk($this->argByPost,$func,'[POST] ');
+            $tmp = array_merge($tmp,array_map($add, array_keys($result), $result));
         }
 
         $value = file_get_contents("php://input");
@@ -80,7 +92,7 @@ class Log
         $body = json_encode($this->getLog());
         $this->setContentLength($body);
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_USERPWD, $this->auth);  
+        curl_setopt($ch, CURLOPT_USERPWD, $this->auth); 
         curl_setopt($ch, CURLOPT_URL, $this->url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_HTTPHEADER,$header);
