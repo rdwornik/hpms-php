@@ -85,6 +85,7 @@ class Log
         //If everything went OK, return the response.
         $header =  array_map(function ($h, $v) {return "$h: $v";}, array_keys($this->headers), $this->headers);
         $body = json_encode($this->getLog());
+        print_r($body);
         $this->setContentLength($body);
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_USERPWD, $this->auth);  
