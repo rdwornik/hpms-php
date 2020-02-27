@@ -23,13 +23,15 @@ class Log
         $this->argByGet = array_filter($_GET, 'strlen');
         $this->datetime = date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']);
         $this->server = $config['serverName'];
-        $this->filter = $config['filter'];
-        $this->strange = $config['strange'];
+        $this->filter = (array)$config['filter'];
+        $this->strange = (array)$config['strange'];
         $this->strangeStr = $config['strangeStr'];
         $this->url = $config['url'];
         $this->headers = (array)$config['headers'];
         $this->auth = $config['user'].":".$config['password'];
     }
+
+
     private function getLog()
     {
         $add = function($h, $v)
@@ -41,11 +43,28 @@ class Log
         array_push($tmp, $add('datetime',$this->datetime));
         array_push($tmp, $add('server',$this->server));
         $to_filtr = $this->filter;
+        $strange = $this->strange;
+        $strangeStr = $this->strangeStr;
         $result = array();
 
-        $func = function (&$item1, &$key, $prefix) use(&$result, $to_filtr,$add)
+        $isStrange = function($str) use($strange)
+        {
+            foreach (str_split($str) as $c)
+            {
+                $h = sprintf("%02x", ord($c));
+                if (in_array($h, $strange))
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        $func = function (&$item1, &$key, $prefix) use(&$result, $to_filtr,$isStrange,$strangeStr)
         {
             if(!in_array($key, $to_filtr))
+                if($isStrange($item1))
+                    $item1 = $strangeStr;
                 $result[$prefix.$key] = $item1;
         };
 
@@ -75,11 +94,8 @@ class Log
         if (strlen($value) > 0)
         {
             $key = "[POST] [RAW POST]";
-
-            if ($this->isStrange($value))
-            {
-                $value =$this->strangeStr;
-            }
+            if ($isStrange($value))
+                $value =$strangeStr;
             array_push($tmp,$add($key,$value));
         }
         return $tmp;
@@ -100,19 +116,6 @@ class Log
         curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
         $result = curl_exec($ch);
         return $result;
-    }
-
-    private function isStrange($str)
-    {
-        foreach (str_split($str) as $c)
-        {
-            $h = sprintf("%02x", ord($c));
-            if (in_array($h, (array)$this->strange))
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     private function setContentLength($str)

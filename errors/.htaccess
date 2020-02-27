@@ -4,7 +4,7 @@ ErrorDocument 403 /errors/403.html
 
 Options -Indexes
 
-<Files .htaccess>
-order allow,deny
-deny from all
+<Files ".htaccess">
+Order allow,deny
+Deny from all
 </Files>

@@ -4,27 +4,18 @@ ErrorDocument 403 /errors/403.html
 
 Options -Indexes
 
-<Files .htaccess>
-order allow,deny
-deny from all
+
+<Files ".htaccess">
+Order allow,deny
+Deny from all
 </Files>
 
-<Files settings.php>
-order allow,deny
-deny from all
+<Files "LogPlugin.php">
+Order allow,deny
+Deny from all
 </Files>
 
-<Files DBConnection.php>
-order allow,deny
-deny from all
-</Files>
-
-<Files Log.php>
-order allow,deny
-deny from all
-</Files>
-
-<Files LogPlugin.php>
-order allow,deny
-deny from all
+<Files "LogPluginSilent.php">
+Order allow,deny
+Deny from all
 </Files>
