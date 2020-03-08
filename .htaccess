@@ -1,8 +1,9 @@
 AddType application/x-httpd-php .html
-FallbackResource /errors/404.html
-FallbackResource /errors/403.html
+RewriteEngine On
+ErrorDocument 404 /errors/404.html
+ErrorDocument 403 /errors/403.html
 
-Options  -Indexes
+Options -Indexes
 
 <Files ".htaccess">
 Order allow,deny
