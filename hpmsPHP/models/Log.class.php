@@ -40,8 +40,12 @@ class Log
         };
 
         $tmp = array();
-        array_push($tmp, $add('datetime',$this->datetime));
-        array_push($tmp, $add('server',$this->server));
+
+        array_push($tmp, $add('VISITORS_IP',$this->getUserIP()));
+        //array_push($tmp, $add('server',$this->server));
+        // $tmp['datetime'] = $this->datetime;
+        // $tmp['server'] = $this->server;
+
         $to_filtr = $this->filter;
         $strange = $this->strange;
         $strangeStr = $this->strangeStr;
@@ -76,6 +80,8 @@ class Log
             $tmp = array_merge($tmp,array_map($add, array_keys($result), $result));
         }
 
+        print_r($_GET);
+        echo "<br>";
         if (($this->srv['REQUEST_METHOD'] === 'GET') && !empty($this->argByGet))
         {
             $result = array();
@@ -98,7 +104,12 @@ class Log
                 $value =$strangeStr;
             array_push($tmp,$add($key,$value));
         }
-        return $tmp;
+        #return $tmp;
+        return array(
+            'time' => $this->datetime,
+            'server' => $this->server,
+            'headers' => $tmp
+        );
     }
 
     public function post()
@@ -106,6 +117,7 @@ class Log
         //If everything went OK, return the response.
         $header =  array_map(function ($h, $v) {return "$h: $v";}, array_keys($this->headers), $this->headers);
         $body = json_encode($this->getLog());
+        print_r($body);
         $this->setContentLength($body);
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_USERPWD, $this->auth); 
@@ -115,12 +127,28 @@ class Log
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
         $result = curl_exec($ch);
+        // print_r($result);
         return $result;
     }
 
     private function setContentLength($str)
     {
         $this->headers['Content-Length'] = strlen((string)$str);
+    }
+
+    private function getUserIP()
+    {
+        if( array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER) && !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ) {
+            if (strpos($_SERVER['HTTP_X_FORWARDED_FOR'], ',')>0) {
+                $addr = explode(",",$_SERVER['HTTP_X_FORWARDED_FOR']);
+                return trim($addr[0]);
+            } else {
+                return $_SERVER['HTTP_X_FORWARDED_FOR'];
+            }
+        }
+        else {
+            return $_SERVER['REMOTE_ADDR'];
+        }
     }
 
 }
