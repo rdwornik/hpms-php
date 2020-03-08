@@ -34,6 +34,15 @@ class Log
 
     private function getLog()
     {
+        echo "srv <br>";
+        print_r($_SERVER);
+        echo "<br> get <br>";
+        print_r($_GET);
+        echo "<br>";
+        echo "<br> post <br>";
+        print_r($_POST);
+        
+
         $add = function($h, $v)
         {
             return array('name' => $h, 'value' => $v);
@@ -80,8 +89,6 @@ class Log
             $tmp = array_merge($tmp,array_map($add, array_keys($result), $result));
         }
 
-        print_r($_GET);
-        echo "<br>";
         if (($this->srv['REQUEST_METHOD'] === 'GET') && !empty($this->argByGet))
         {
             $result = array();
@@ -117,7 +124,7 @@ class Log
         //If everything went OK, return the response.
         $header =  array_map(function ($h, $v) {return "$h: $v";}, array_keys($this->headers), $this->headers);
         $body = json_encode($this->getLog());
-        print_r($body);
+        // print_r($body);
         $this->setContentLength($body);
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_USERPWD, $this->auth); 
