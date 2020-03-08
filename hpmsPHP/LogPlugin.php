@@ -1,6 +1,4 @@
 <?php
-// include "models/Log.class.php";
-
 
 include "models/Log.class.php";
 

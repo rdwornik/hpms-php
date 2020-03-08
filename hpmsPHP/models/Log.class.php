@@ -41,7 +41,6 @@ class Log
         echo "<br>";
         echo "<br> post <br>";
         print_r($_POST);
-        
 
         $add = function($h, $v)
         {
@@ -51,9 +50,6 @@ class Log
         $tmp = array();
 
         array_push($tmp, $add('VISITORS_IP',$this->getUserIP()));
-        //array_push($tmp, $add('server',$this->server));
-        // $tmp['datetime'] = $this->datetime;
-        // $tmp['server'] = $this->server;
 
         $to_filtr = $this->filter;
         $strange = $this->strange;
