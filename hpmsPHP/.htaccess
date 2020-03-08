@@ -1,21 +1,5 @@
 AddType application/x-httpd-php .html
-ErrorDocument 404 /errors/404.html
-ErrorDocument 403 /errors/403.html
 
 
-Options  -Indexes
 
-<Files ".htaccess">
-Order allow,deny
-Deny from all
-</Files>
 
-<Files "LogPlugin.php">
-Order allow,deny
-Deny from all
-</Files>
-
-<Files "LogPluginSilent.php">
-Order allow,deny
-Deny from all
-</Files>

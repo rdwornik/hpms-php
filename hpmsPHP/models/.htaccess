@@ -1,16 +1,2 @@
 AddType application/x-httpd-php .html
-FallbackResource /errors/404.html
-FallbackResource /errors/403.html
 
-Options  -Indexes
-
-
-<Files ".htaccess">
-Order allow,deny
-Deny from all
-</Files>
-
-<Files "Log.class.php">
-Order allow,deny
-Deny from all
-</Files>
