@@ -34,13 +34,13 @@ class Log
 
     private function getLog()
     {
-        echo "srv <br>";
-        print_r($_SERVER);
-        echo "<br> get <br>";
-        print_r($_GET);
-        echo "<br>";
-        echo "<br> post <br>";
-        print_r($_POST);
+        // echo "srv <br>";
+        // print_r($_SERVER);
+        // echo "<br> get <br>";
+        // print_r($_GET);
+        // echo "<br>";
+        // echo "<br> post <br>";
+        // print_r($_POST);
         
 
         $add = function($h, $v)
@@ -70,14 +70,16 @@ class Log
             return false;
         };
 
-        $func = function (&$item1, &$key, $prefix) use(&$result, $to_filtr,$isStrange,$strangeStr)
+        $func = function (&$item1, &$key, $prefix) use(&$result,
+        $to_filtr,
+        $isStrange,
+        $strangeStr)
         {
             if(!in_array($key, $to_filtr))
                 if($isStrange($item1))
                     $item1 = $strangeStr;
                 $result[$prefix.$key] = $item1;
         };
-
 
         if ((!empty($this->srv)))
         {
@@ -89,14 +91,14 @@ class Log
         if (($this->srv['REQUEST_METHOD'] === 'GET') && !empty($this->argByGet))
         {
             $result = array();
-            array_walk($this->argByGet,$func,'[GET] ');
+            array_walk($this->argByGet,$func,'[GET]');
             $tmp = array_merge($tmp,array_map($add, array_keys($result), $result));
         }
 
         if (($this->srv['REQUEST_METHOD'] === 'POST') && !empty($this->argByPost))
         {
             $result = array();
-            array_walk($this->argByPost,$func,'[POST] ');
+            array_walk($this->argByPost,$func,'[POST]');
             $tmp = array_merge($tmp,array_map($add, array_keys($result), $result));
         }
 
@@ -108,7 +110,7 @@ class Log
                 $value =$strangeStr;
             array_push($tmp,$add($key,$value));
         }
-        #return $tmp;
+        print_r($tmp);
         return array(
             'time' => $this->datetime,
             'server' => $this->server,
