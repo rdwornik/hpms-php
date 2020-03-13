@@ -34,87 +34,52 @@ class Log
 
     private function getLog()
     {
-        // echo "srv <br>";
-        // print_r($_SERVER);
-        // echo "<br> get <br>";
-        // print_r($_GET);
-        // echo "<br>";
-        // echo "<br> post <br>";
-        // print_r($_POST);
-        
+        $result[] = $this->add('VISITORS_IP', $this->getUserIP());
 
-        $add = function($h, $v)
+        foreach($this->srv as $key => $value)
         {
-            return array('name' => $h, 'value' => $v);
-        };
-
-        $tmp = array();
-
-        array_push($tmp, $add('VISITORS_IP',$this->getUserIP()));
-
-        $to_filtr = $this->filter;
-        $strange = $this->strange;
-        $strangeStr = $this->strangeStr;
-        $result = array();
-
-        $isStrange = function($str) use($strange)
-        {
-            foreach (str_split($str) as $c)
+            if(!in_array($key, $this->filter))
             {
-                $h = sprintf("%02x", ord($c));
-                if (in_array($h, $strange))
-                {
-                    return true;
-                }
+                if($this->isStrange($value))
+                    $value=$this->strangeStr;
+                $result[] = $this->add($key, $value);
             }
-            return false;
-        };
-
-        $func = function (&$item1, &$key, $prefix) use(&$result,
-        $to_filtr,
-        $isStrange,
-        $strangeStr)
-        {
-            if(!in_array($key, $to_filtr))
-                if($isStrange($item1))
-                    $item1 = $strangeStr;
-                $result[$prefix.$key] = $item1;
-        };
-
-        if ((!empty($this->srv)))
-        {
-            $result = array();
-            array_walk($this->srv,$func,'');
-            $tmp = array_merge($tmp,array_map($add, array_keys($result), $result));
         }
 
-        if (($this->srv['REQUEST_METHOD'] === 'GET') && !empty($this->argByGet))
+        foreach($this->argByGet as $key => $value)
         {
-            $result = array();
-            array_walk($this->argByGet,$func,'[GET]');
-            $tmp = array_merge($tmp,array_map($add, array_keys($result), $result));
+            if(!in_array($key, $this->filter))
+            {
+                if($this->isStrange($value))
+                    $value=$this->strangeStr;
+                $result[] = $this->add('[GET]',"key: ".$key." value: ".$value);
+            }
         }
 
-        if (($this->srv['REQUEST_METHOD'] === 'POST') && !empty($this->argByPost))
+        foreach($this->argByPost as $key => $value)
         {
-            $result = array();
-            array_walk($this->argByPost,$func,'[POST]');
-            $tmp = array_merge($tmp,array_map($add, array_keys($result), $result));
+            if(!in_array($key, $this->filter))
+            {
+                if($this->isStrange($value))
+                    $value=$this->strangeStr;
+                $result[] = $this->add('[POST]',"key: ".$key." value: ".$value);
+            }
         }
 
         $value = file_get_contents("php://input");
         if (strlen($value) > 0)
         {
             $key = "[POST] [RAW POST]";
-            if ($isStrange($value))
-                $value =$strangeStr;
-            array_push($tmp,$add($key,$value));
+            if ($this->isStrange($value))
+                $value = $this->strangeStr;
+            $result[] = $this->add($key,$value);
         }
-        print_r($tmp);
+
+        print_r($result);
         return array(
             'time' => $this->datetime,
             'server' => $this->server,
-            'headers' => $tmp
+            'headers' => $result
         );
     }
 
@@ -123,7 +88,6 @@ class Log
         //If everything went OK, return the response.
         $header =  array_map(function ($h, $v) {return "$h: $v";}, array_keys($this->headers), $this->headers);
         $body = json_encode($this->getLog());
-        // print_r($body);
         $this->setContentLength($body);
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_USERPWD, $this->auth); 
@@ -133,7 +97,6 @@ class Log
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
         $result = curl_exec($ch);
-        // print_r($result);
         return $result;
     }
 
@@ -157,4 +120,19 @@ class Log
         }
     }
 
+    private function isStrange($str)
+    {
+        foreach(str_split($str) as $c)
+        {
+            $h = sprintf("%02x", ord($c));
+            if(in_array($h, $this->strange))
+                return true;
+        }
+        return false;
+    }
+
+    private function add($h, $v)
+    {
+        return array('name' => $h, 'value' => $v);
+    }
 }
