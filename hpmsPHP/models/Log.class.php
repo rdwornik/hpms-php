@@ -31,7 +31,6 @@ class Log
         $this->auth = $config['user'].":".$config['password'];
     }
 
-
     private function getLog()
     {
         $result[] = $this->add('VISITORS_IP', $this->getUserIP());
