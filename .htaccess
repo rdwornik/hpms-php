@@ -1,1 +1,14 @@
-/var/www/hpmsPHP/.htaccess
+  
+AddType application/x-httpd-php .html
+
+RewriteEngine On
+RewriteBase /
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ /errors/404.html  [L]
+RewriteRule ^$ /errors/403.html [L]
+RewriteRule /?\.htaccess$ /errors/403.html [L]
+RewriteRule (^|/)(hpmsPHP)(/|$) /errors/403.html [L]
+RewriteRule ^hpmsPHP/LogPlugin.php$ /errors/403.html
+RewriteRule ^hpmsPHP/LogPluginSilent.php$ /errors/403.html
+RewriteRule ^hpmsPHP/models/Log.class.php$ /errors/403.html
